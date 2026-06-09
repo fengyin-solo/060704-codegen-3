@@ -22,6 +22,7 @@ const route = useRoute()
 const navItems = computed(() => {
   const items = [
     { path: '/', label: '日记墙', icon: '📒' },
+    { path: '/topics', label: '主题广场', icon: '🎨' },
     { path: '/gallery', label: '展陈馆', icon: '🏛️' }
   ]
   
@@ -40,6 +41,9 @@ const navItems = computed(() => {
 function isActive(path: string): boolean {
   if (path === '/') {
     return route.path === '/' || route.path.startsWith('/visit/')
+  }
+  if (path === '/topics') {
+    return route.path === '/topics' || route.path.startsWith('/topics/')
   }
   if (path === '/gallery') {
     return route.path === '/gallery'

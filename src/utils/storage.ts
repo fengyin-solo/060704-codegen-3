@@ -1,11 +1,13 @@
-import type { Diary, User, InventoryItem, ArchivedDiary } from '@/types'
+import type { Diary, User, InventoryItem, ArchivedDiary, Topic, TopicSubmission } from '@/types'
 
 const STORAGE_KEYS = {
   CURRENT_USER: 'glitch_diary_current_user',
   USERS: 'glitch_diary_users',
   DIARIES: 'glitch_diary_diaries',
   INVENTORY: 'glitch_diary_inventory_',
-  ARCHIVED_DIARIES: 'glitch_diary_archived_diaries'
+  ARCHIVED_DIARIES: 'glitch_diary_archived_diaries',
+  TOPICS: 'glitch_diary_topics',
+  TOPIC_SUBMISSIONS: 'glitch_diary_topic_submissions'
 }
 
 export const storage = {
@@ -55,5 +57,23 @@ export const storage = {
 
   saveArchivedDiaries(archivedDiaries: ArchivedDiary[]): void {
     localStorage.setItem(STORAGE_KEYS.ARCHIVED_DIARIES, JSON.stringify(archivedDiaries))
+  },
+
+  getTopics(): Topic[] {
+    const data = localStorage.getItem(STORAGE_KEYS.TOPICS)
+    return data ? JSON.parse(data) : []
+  },
+
+  saveTopics(topics: Topic[]): void {
+    localStorage.setItem(STORAGE_KEYS.TOPICS, JSON.stringify(topics))
+  },
+
+  getTopicSubmissions(): TopicSubmission[] {
+    const data = localStorage.getItem(STORAGE_KEYS.TOPIC_SUBMISSIONS)
+    return data ? JSON.parse(data) : []
+  },
+
+  saveTopicSubmissions(submissions: TopicSubmission[]): void {
+    localStorage.setItem(STORAGE_KEYS.TOPIC_SUBMISSIONS, JSON.stringify(submissions))
   }
 }

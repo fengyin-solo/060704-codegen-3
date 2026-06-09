@@ -236,3 +236,56 @@ export const TIME_PERIOD_NAMES: Record<TimePeriod, string> = {
   [TimePeriod.YEAR]: '年度珍藏',
   [TimePeriod.ALL]: '全部时光'
 }
+
+export enum TopicStatus {
+  ACCEPTING = 'accepting',
+  JUDGING = 'judging',
+  FINISHED = 'finished'
+}
+
+export const TOPIC_STATUS_NAMES: Record<TopicStatus, string> = {
+  [TopicStatus.ACCEPTING]: '征集中',
+  [TopicStatus.JUDGING]: '评选中',
+  [TopicStatus.FINISHED]: '已结束'
+}
+
+export const TOPIC_STATUS_COLORS: Record<TopicStatus, string> = {
+  [TopicStatus.ACCEPTING]: '#39ff14',
+  [TopicStatus.JUDGING]: '#ffd700',
+  [TopicStatus.FINISHED]: '#6b3fa0'
+}
+
+export interface Topic {
+  id: string
+  ownerId: string
+  ownerName: string
+  title: string
+  description: string
+  coverImage?: string
+  deadline: number
+  maxWinners: number
+  status: TopicStatus
+  createdAt: number
+  selectedSubmissionIds: string[]
+}
+
+export interface TopicSubmission {
+  id: string
+  topicId: string
+  diaryId: string
+  submitterId: string
+  submitterName: string
+  diaryTitle: string
+  note?: string
+  submittedAt: number
+  isSelected: boolean
+  selectedAt?: number
+}
+
+export interface CreateTopicInput {
+  title: string
+  description: string
+  deadline: number
+  maxWinners: number
+  coverImage?: string
+}
