@@ -95,13 +95,13 @@ onMounted(() => {
   updateTimeRemaining()
   timer = window.setInterval(() => {
     updateTimeRemaining()
-    topicStore.checkAndUpdateStatus()
   }, 1000)
 })
 
 onUnmounted(() => {
   if (timer) {
     clearInterval(timer)
+    timer = null
   }
 })
 </script>
@@ -225,7 +225,17 @@ onUnmounted(() => {
     </div>
     
     <template v-if="activeTab === 'selected'">
-      <div v-if="selectedSubmissions.length === 0" class="text-center py-16">
+      <div v-if="topic.status === 'accepting'" class="text-center py-16">
+        <div class="text-6xl mb-4">⏳</div>
+        <p class="text-gray-500 font-vt323 text-xl">
+          征集尚未截止
+        </p>
+        <p class="text-gray-600 font-vt323 mt-2">
+          征集截止后将进入评选阶段，届时可查看入选结果
+        </p>
+      </div>
+      
+      <div v-else-if="selectedSubmissions.length === 0" class="text-center py-16">
         <div class="text-6xl mb-4">🏆</div>
         <p class="text-gray-500 font-vt323 text-xl">
           {{ topic.status === 'finished' ? '本主题暂无入选作品' : '暂无入选作品' }}
@@ -233,9 +243,18 @@ onUnmounted(() => {
         <p v-if="topic.status === 'judging' && isOwner" class="text-gray-600 font-vt323 mt-2">
           请在"全部投稿"中选择入选作品
         </p>
+        <p v-else-if="topic.status === 'judging' && !isOwner" class="text-gray-600 font-vt323 mt-2">
+          发起人正在评选中，请耐心等待结果
+        </p>
       </div>
       
       <div v-else class="space-y-4">
+        <div v-if="topic.status === 'finished'" class="p-4 bg-diary-gold/10 rounded-lg border border-diary-gold/30 mb-4">
+          <p class="font-vt323 text-diary-gold text-center">
+            🎉 最终入选结果已公布，恭喜以下作者！
+          </p>
+        </div>
+        
         <SubmissionCard
           v-for="submission in selectedSubmissions"
           :key="submission.id"

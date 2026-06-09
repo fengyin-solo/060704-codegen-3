@@ -28,6 +28,7 @@ const getDiaryStore = () => {
 export const useTopicStore = defineStore('topic', () => {
   const topics = ref<Topic[]>([])
   const submissions = ref<TopicSubmission[]>([])
+  let statusCheckInterval: number | null = null
 
   const acceptingTopics = computed(() => {
     return topics.value
@@ -58,20 +59,40 @@ export const useTopicStore = defineStore('topic', () => {
     }
     
     checkAndUpdateStatus()
+    startStatusCheck()
+  }
+
+  function startStatusCheck() {
+    if (statusCheckInterval) {
+      clearInterval(statusCheckInterval)
+    }
+    statusCheckInterval = window.setInterval(() => {
+      checkAndUpdateStatus()
+    }, 1000)
+  }
+
+  function stopStatusCheck() {
+    if (statusCheckInterval) {
+      clearInterval(statusCheckInterval)
+      statusCheckInterval = null
+    }
   }
 
   function checkAndUpdateStatus() {
     const now = globalTimeline.getTime()
     let hasChanges = false
 
-    topics.value.forEach(topic => {
+    const updatedTopics = topics.value.map(topic => {
       if (topic.status === TS.ACCEPTING && topic.deadline <= now) {
-        topic.status = TS.JUDGING
         hasChanges = true
+        console.log('[Topic] 主题截止，进入评选:', topic.title)
+        return { ...topic, status: TS.JUDGING as const }
       }
+      return topic
     })
 
     if (hasChanges) {
+      topics.value = updatedTopics
       storage.saveTopics(topics.value)
     }
   }
@@ -185,52 +206,81 @@ export const useTopicStore = defineStore('topic', () => {
   }
 
   function selectSubmission(submissionId: string): void {
-    const submission = submissions.value.find(s => s.id === submissionId)
-    if (!submission) {
+    const submissionIndex = submissions.value.findIndex(s => s.id === submissionId)
+    if (submissionIndex === -1) {
       throw new Error('投稿不存在')
     }
 
-    const topic = getTopicById(submission.topicId)
-    if (!topic) {
+    const submission = submissions.value[submissionIndex]
+    const topicIndex = topics.value.findIndex(t => t.id === submission.topicId)
+    if (topicIndex === -1) {
       throw new Error('主题不存在')
     }
 
+    const topic = topics.value[topicIndex]
     const userStore = getUserStore()
     if (topic.ownerId !== userStore.currentUserId) {
       throw new Error('只有主题发起人可以评选')
     }
 
+    const now = globalTimeline.getTime()
+    let newSelectedIds: string[]
+    let newIsSelected: boolean
+    let newSelectedAt: number | undefined
+
     if (submission.isSelected) {
-      submission.isSelected = false
-      submission.selectedAt = undefined
-      topic.selectedSubmissionIds = topic.selectedSubmissionIds.filter(id => id !== submissionId)
+      newIsSelected = false
+      newSelectedAt = undefined
+      newSelectedIds = topic.selectedSubmissionIds.filter(id => id !== submissionId)
     } else {
       if (topic.selectedSubmissionIds.length >= topic.maxWinners) {
         throw new Error(`最多只能选择 ${topic.maxWinners} 个入选作品`)
       }
-      submission.isSelected = true
-      submission.selectedAt = globalTimeline.getTime()
-      topic.selectedSubmissionIds.push(submissionId)
+      newIsSelected = true
+      newSelectedAt = now
+      newSelectedIds = [...topic.selectedSubmissionIds, submissionId]
     }
+
+    const updatedSubmissions = [...submissions.value]
+    updatedSubmissions[submissionIndex] = {
+      ...submission,
+      isSelected: newIsSelected,
+      selectedAt: newSelectedAt
+    }
+    submissions.value = updatedSubmissions
+
+    const updatedTopics = [...topics.value]
+    updatedTopics[topicIndex] = {
+      ...topic,
+      selectedSubmissionIds: newSelectedIds
+    }
+    topics.value = updatedTopics
 
     storage.saveTopics(topics.value)
     storage.saveTopicSubmissions(submissions.value)
     
-    console.log('[Topic] 评选状态更新:', submission.diaryTitle, submission.isSelected ? '入选' : '取消入选')
+    console.log('[Topic] 评选状态更新:', submission.diaryTitle, newIsSelected ? '入选' : '取消入选')
   }
 
   function finishTopic(topicId: string): void {
-    const topic = getTopicById(topicId)
-    if (!topic) {
+    const topicIndex = topics.value.findIndex(t => t.id === topicId)
+    if (topicIndex === -1) {
       throw new Error('主题不存在')
     }
 
+    const topic = topics.value[topicIndex]
     const userStore = getUserStore()
     if (topic.ownerId !== userStore.currentUserId) {
       throw new Error('只有主题发起人可以结束评选')
     }
 
-    topic.status = TS.FINISHED
+    const updatedTopics = [...topics.value]
+    updatedTopics[topicIndex] = {
+      ...topic,
+      status: TS.FINISHED
+    }
+    topics.value = updatedTopics
+
     storage.saveTopics(topics.value)
     
     console.log('[Topic] 主题已结束:', topic.title)
@@ -350,6 +400,8 @@ export const useTopicStore = defineStore('topic', () => {
     finishedTopics,
     myTopics,
     init,
+    startStatusCheck,
+    stopStatusCheck,
     createTopic,
     getTopicById,
     getSubmissionsByTopic,
